@@ -1,0 +1,22 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.test.pulltoscale.view.PullToScaleListView
+        android:id="@+id/ptz_pull_to_scale_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <include 
+	        android:id="@+id/layout_pull_to_scale_list_view_header"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        layout="@layout/layout_pull_to_scale_view_header"/>
+        <ListView 
+            android:id="@+id/lv_pull_to_scale_list_view"
+            android:layout_width="match_parent"
+        	android:layout_height="match_parent"/>
+    </com.test.pulltoscale.view.PullToScaleListView>
+
+</RelativeLayout>
