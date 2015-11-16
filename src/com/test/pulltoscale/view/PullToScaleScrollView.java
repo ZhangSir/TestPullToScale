@@ -2,6 +2,7 @@ package com.test.pulltoscale.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.ViewGroup;
 import android.widget.ScrollView;
 
 public class PullToScaleScrollView extends PullToScaleBaseView{
@@ -61,6 +62,16 @@ public class PullToScaleScrollView extends PullToScaleBaseView{
 
 	public void setScrollView(ScrollView scrollView) {
 		this.scrollView = scrollView;
+	}
+
+	@Override
+	protected void setContentViewMaxHeight() {
+		if(contentViewMaxHeight < 0){
+			contentViewMaxHeight = scrollView.getHeight() + (maxHeight - minHeight);
+		}
+		ViewGroup.LayoutParams lp = scrollView.getLayoutParams();
+		lp.height = contentViewMaxHeight;
+		scrollView.setLayoutParams(lp);
 	}
 
 }

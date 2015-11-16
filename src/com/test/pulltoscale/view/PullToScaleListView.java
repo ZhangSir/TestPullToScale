@@ -2,6 +2,7 @@ package com.test.pulltoscale.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.ViewGroup;
 import android.widget.ListView;
 
 public class PullToScaleListView extends PullToScaleBaseView {
@@ -85,5 +86,15 @@ public class PullToScaleListView extends PullToScaleBaseView {
 	 */
 	public void setListView(ListView listView) {
 		this.listView = listView;
+	}
+
+	@Override
+	protected void setContentViewMaxHeight() {
+		if(contentViewMaxHeight < 0){
+			contentViewMaxHeight = listView.getHeight() + (maxHeight - minHeight);
+		}
+		ViewGroup.LayoutParams lp = listView.getLayoutParams();
+		lp.height = contentViewMaxHeight;
+		listView.setLayoutParams(lp);
 	}
 }

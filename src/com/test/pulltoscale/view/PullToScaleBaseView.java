@@ -7,7 +7,6 @@ import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -45,6 +44,12 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	
 	protected View headerView;
 	
+	/**ContentView的最大高度*/
+	protected int contentViewMaxHeight = -1;
+	
+	/**标记是否允许在第一次触摸时设置ContentView的MaxHeight*/
+	private boolean allowResetContentViewMaxHeight = true;
+	
 	private ValueAnimator mValueAnimator;
 	
 	protected OnPullZoomListener onPullZoomListener;
@@ -66,7 +71,6 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	@SuppressLint("NewApi")
 	private void init(Context context, AttributeSet attrs){
 		this.mContext = context;
-		setGravity(Gravity.CENTER);
 		
 		ViewConfiguration config = ViewConfiguration.get(context);
         mTouchSlop = config.getScaledTouchSlop();
@@ -129,6 +133,11 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 		}
 		if(this.anchorHeight == 0) this.anchorHeight = this.minHeight + (this.maxHeight - this.minHeight)/2;
 		
+		/*第一次触摸时，为ContentView设置最大高度*/
+		if(allowResetContentViewMaxHeight){
+			setContentViewMaxHeight();
+			allowResetContentViewMaxHeight = false;
+		}
 		
 		final int action = event.getAction();
 
@@ -311,6 +320,46 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	}
 
 	/**
+	 * 为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
+	 * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
+	 * （这种情况，已在ListView下验证过，为Listview设置过最大高度后，ListView再动画过程中就不需要重绘子View，动画流畅度大大提升）
+	 * @param height 大于等于0有效
+	 */
+	public void setContentViewMaxHeight(int height){
+		this.contentViewMaxHeight = height;
+	}
+	
+	/**
+	 * 为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
+	 * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
+	 * （这种情况，已在ListView下验证过，为Listview设置过最大高度后，ListView再动画过程中就不需要重绘子View，动画流畅度大大提升）
+	 */
+	public int getContentViewMaxHeight(){
+		return this.contentViewMaxHeight;
+	}
+	
+	/**
+	 * 标记是否允许在第一次触摸时设置ContentView的MaxHeight，默认为true，允许设置
+	 * 设置为true为允许，此时请设置setContentViewMaxHeight(int height)，指定ContentView的最大高度，
+	 * 如果不指定，将自动已当前ContentView的高度 + headerView的最大高度 - headerView的最小高度为ContentView的最大高度；
+	 * @return
+	 */
+	public boolean isAllowResetContentViewMaxHeight() {
+		return allowResetContentViewMaxHeight;
+	}
+
+	/**
+	 * 标记是否允许在第一次触摸时设置ContentView的MaxHeight;
+	 * 设置为true为允许，此时请设置setContentViewMaxHeight(int height)，指定ContentView的最大高度，
+	 * 如果不指定，将自动已当前ContentView的高度 + headerView的最大高度 - headerView的最小高度为ContentView的最大高度；
+	 * @param allowResetContentViewMaxHeight，默认为true，允许设置
+	 */
+	public void setAllowResetContentViewMaxHeight(
+			boolean allowResetContentViewMaxHeight) {
+		this.allowResetContentViewMaxHeight = allowResetContentViewMaxHeight;
+	}
+
+	/**
 	 * 判断当前headerview是否允许拖拽；<p>
 	 * @return
 	 */
@@ -327,6 +376,14 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	  * @return
 	  */
 	 protected abstract boolean isReadyForDragUp();
+	 
+	 /**
+	  *为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
+	  * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
+	  * 如果用户未指定contentViewMaxHeight，则将自动已当前ContentView的高度 + headerView的最大高度 - headerView的最小高度为ContentView的最大高度；
+	  * （这种情况，已在ListView下验证过，为Listview设置过最大高度后，ListView再动画过程中就不需要重绘子View，动画流畅度大大提升）
+	  */
+	 protected abstract void setContentViewMaxHeight();
 	
 	/**
 	 * 获取HeaderView缩放过程的监听器

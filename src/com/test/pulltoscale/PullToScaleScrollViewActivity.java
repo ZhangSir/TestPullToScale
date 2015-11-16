@@ -29,6 +29,10 @@ public class PullToScaleScrollViewActivity extends Activity {
 		ptzView.setScrollView(mScrollView);
 		ptzView.setHeaderView(mHeaderView);
 		
+		//允许设置ContentView的最大高度
+		ptzView.setAllowResetContentViewMaxHeight(true);
+//		ptzView.setContentViewMaxHeight(height);//高度不指定，由组件自己计算
+		
 		//设置HeaderView的最小化高度
 		ptzView.setMinHeight((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100,
 				getResources().getDisplayMetrics()));
