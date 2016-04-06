@@ -13,6 +13,9 @@ setContentViewMaxHeight(int height)是为ContentView指定ContentView的最大�
 setAllowResetContentViewMaxHeight(
 			boolean allowResetContentViewMaxHeight)设置标记是否允许在第一次触摸时设置ContentView的最大高度，默认为true允许；
 
+*新增缩放过程中阴影遮罩动画；即在缩放HeaderView时headerView上方会有阴影从浅到深逐渐变化；
+ 使用方法：调用该组件的setCoverViewId(int id)方法，设置HeaderView中用于遮罩的View的id给该组件，
+ 则该组件会在缩放过程中自动改变该遮罩View的透明度；
 
 拓展：
 	如果需要拓展别的组件，请务必重写setContentViewMaxHeight()虚函数，实现为contentView设置一个显示时的最大高度；
