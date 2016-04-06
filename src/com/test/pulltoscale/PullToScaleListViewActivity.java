@@ -46,6 +46,7 @@ public class PullToScaleListViewActivity extends Activity {
 		
 		ptzView.setListView(mListView);
 		ptzView.setHeaderView(mHeaderView);
+		ptzView.setCoverViewId(R.id.v_cover);
 		
 		//允许设置ContentView的最大高度
 		ptzView.setAllowResetContentViewMaxHeight(true);

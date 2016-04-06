@@ -25,7 +25,7 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	private final String TAG = PullToScaleBaseView.class.getSimpleName();
 	
 	private Context mContext;
-	
+
 	/** header最大化时的高度*/
 	protected int maxHeight = 0;
 	/** header最小化时的高度*/
@@ -36,24 +36,26 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	protected int anchorHeight = minHeight + (maxHeight - minHeight)/2;
 	/** 标记是否在用户拖动的过程中*/
 	private boolean mIsBeingDragged;
-	
+
 	private int mTouchSlop;
-	
+
 	private float mLastMotionY;
 	private float mLastMotionX;
-	
+
 	protected View headerView;
-	
+
 	/**ContentView的最大高度*/
 	protected int contentViewMaxHeight = -1;
-	
+
 	/**标记是否允许在第一次触摸时设置ContentView的MaxHeight*/
 	private boolean allowResetContentViewMaxHeight = true;
-	
+
+    private View coverView;
+
 	private ValueAnimator mValueAnimator;
-	
+
 	protected OnPullZoomListener onPullZoomListener;
-	
+
 	public PullToScaleBaseView(Context context) {
 		this(context, null);
 	}
@@ -71,51 +73,53 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	@SuppressLint("NewApi")
 	private void init(Context context, AttributeSet attrs){
 		this.mContext = context;
-		
-		ViewConfiguration config = ViewConfiguration.get(context);
-        mTouchSlop = config.getScaledTouchSlop();
-        
-        mValueAnimator = new ValueAnimator();
-        mValueAnimator.setInterpolator(new LinearInterpolator());
-        mValueAnimator.setDuration(200);
-        mValueAnimator.addUpdateListener(new AnimatorUpdateListener() {
-			
-			@Override
-			public void onAnimationUpdate(ValueAnimator animation) {
-				if(null == headerView) return;
-				
-				currentHeight = (int) animation.getAnimatedValue();
-				
-				ViewGroup.LayoutParams localLayoutParams = headerView.getLayoutParams();
-		        localLayoutParams.height = currentHeight;
-		        headerView.setLayoutParams(localLayoutParams);
-		        
-		        if (onPullZoomListener != null) {
-		            onPullZoomListener.onPullZooming(currentHeight);
-		        }
-			}
-		});
-        
-        mValueAnimator.addListener(new AnimatorListenerAdapter() {
 
-        	@Override
-			public void onAnimationStart(Animator animation) {
-				super.onAnimationStart(animation);
-			}
-        	
-        	
-			@Override
-			public void onAnimationEnd(Animator animation) {
-				super.onAnimationEnd(animation);
-				mIsBeingDragged = false;
-				if (onPullZoomListener != null) {
+		ViewConfiguration config = ViewConfiguration.get(context);
+		mTouchSlop = config.getScaledTouchSlop();
+
+		mValueAnimator = new ValueAnimator();
+		mValueAnimator.setInterpolator(new LinearInterpolator());
+		mValueAnimator.setDuration(200);
+		mValueAnimator.addUpdateListener(new AnimatorUpdateListener() {
+
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                if (null == headerView) return;
+
+                currentHeight = (int) animation.getAnimatedValue();
+                updateCoverView();
+
+                ViewGroup.LayoutParams localLayoutParams = headerView.getLayoutParams();
+                localLayoutParams.height = currentHeight;
+                headerView.setLayoutParams(localLayoutParams);
+
+                if (onPullZoomListener != null) {
+                    onPullZoomListener.onPullZooming(currentHeight);
+                }
+            }
+        });
+
+		mValueAnimator.addListener(new AnimatorListenerAdapter() {
+
+            @Override
+            public void onAnimationStart(Animator animation) {
+                super.onAnimationStart(animation);
+            }
+
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                updateCoverView();
+                mIsBeingDragged = false;
+                if (onPullZoomListener != null) {
                     onPullZoomListener.onPullZoomEnd(currentHeight);
                 }
-			}
+            }
 
-		});
+        });
 	}
-	
+
 	/**
 	 * 判断当前headerview是否允许拖拽；<p>
 	 * 判断条件：在HeaderView的top大于等于被拖动组件（如listView等）的top的情况下：<p>
@@ -125,7 +129,7 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	 */
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent event) {
-		
+
 		if(null == headerView) return super.onInterceptTouchEvent(event);
 		if(this.maxHeight == 0) {
 			this.maxHeight = headerView.getHeight();
@@ -138,112 +142,114 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 			setContentViewMaxHeight();
 			allowResetContentViewMaxHeight = false;
 		}
-		
+
 		final int action = event.getAction();
 
-        if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
-            mIsBeingDragged = false;
-            return false;
-        }
-        if (action != MotionEvent.ACTION_DOWN && mIsBeingDragged) {
-            return true;
-        }
-        switch (action) {
-        case MotionEvent.ACTION_DOWN: {
-	            if (isReadyForDrag()) {
-	                mLastMotionY = event.getY();
-	                mLastMotionX = event.getX();
-	                mIsBeingDragged = false;
-	            }
-	            break;
-        	}
-            case MotionEvent.ACTION_MOVE: {
-                if (isReadyForDrag()) {
-                    final float y = event.getY(), x = event.getX();
-                    final float diffY, absDiffX;
+		if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
+			mIsBeingDragged = false;
+			return false;
+		}
+		if (action != MotionEvent.ACTION_DOWN && mIsBeingDragged) {
+			return true;
+		}
+		switch (action) {
+			case MotionEvent.ACTION_DOWN: {
+				if (isReadyForDrag()) {
+					mLastMotionY = event.getRawY();
+					mLastMotionX = event.getRawX();
+					mIsBeingDragged = false;
+				}
+				break;
+			}
+			case MotionEvent.ACTION_MOVE: {
+				if (isReadyForDrag()) {
+					final float y = event.getRawY(), x = event.getRawX();
+					final float diffY, absDiffX;
 
-                    absDiffX = Math.abs(x - mLastMotionX);
-                    diffY = y - mLastMotionY;
+					absDiffX = Math.abs(x - mLastMotionX);
+					diffY = y - mLastMotionY;
 
-                    if((diffY > 0 && isReadyForDragDown())
-                    		|| (diffY < 0 && isReadyForDragUp())){
-                    	if (Math.abs(diffY) > mTouchSlop && Math.abs(diffY) > absDiffX) {
-                        	mLastMotionY = y;
-                            mLastMotionX = x;
-                            mIsBeingDragged = true;
-                        }
-                    }else{
-                    	return super.onInterceptTouchEvent(event);
-                    }
-                }
-                break;
-            }
-        }
+					if((diffY > 0 && isReadyForDragDown())
+							|| (diffY < 0 && isReadyForDragUp())){
+						if (Math.abs(diffY) > mTouchSlop && Math.abs(diffY) > absDiffX) {
+							mLastMotionY = y;
+							mLastMotionX = x;
+							mIsBeingDragged = true;
+						}
+					}else{
+						return super.onInterceptTouchEvent(event);
+					}
+				}
+				break;
+			}
+		}
 
-        return mIsBeingDragged;
+		return mIsBeingDragged;
 	}
-	
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		
-		
-		 if (event.getAction() == MotionEvent.ACTION_DOWN && event.getEdgeFlags() != 0) {
-	            return false;
-	        }
-	        switch (event.getAction()) {
-		        case MotionEvent.ACTION_DOWN: {
-	                if (isReadyForDrag()) {
-	                    mLastMotionY = event.getY();
-	                    mLastMotionX = event.getX();
-	                    return true;
-	                }
-	                break;
-	            }
-	            case MotionEvent.ACTION_MOVE: {
-	                if (mIsBeingDragged) {
-	                	int lastDiffY = (int) (event.getY() - mLastMotionY);
-	                	pullEvent(lastDiffY);
-	                    mLastMotionY = event.getY();
-	                    mLastMotionX = event.getX();
-	                    
-	                    return true;
-	                }
-	                break;
-	            }
-	            case MotionEvent.ACTION_CANCEL:
-	            case MotionEvent.ACTION_UP: {
-	                if (mIsBeingDragged) {
-	                    smoothScrollBack();
-	                    return true;
-	                }
-	                
-	                break;
-	            }
-	        }
-	        return false;
+
+
+		if (event.getAction() == MotionEvent.ACTION_DOWN && event.getEdgeFlags() != 0) {
+			return false;
+		}
+		switch (event.getAction()) {
+			case MotionEvent.ACTION_DOWN: {
+				if (isReadyForDrag()) {
+					mLastMotionY = event.getRawY();
+					mLastMotionX = event.getRawX();
+					return true;
+				}
+				break;
+			}
+			case MotionEvent.ACTION_MOVE: {
+				if (mIsBeingDragged) {
+					int lastDiffY = (int) (event.getRawY() - mLastMotionY);
+					pullEvent(lastDiffY);
+					mLastMotionY = event.getRawY();
+					mLastMotionX = event.getRawX();
+
+					return true;
+				}
+				break;
+			}
+			case MotionEvent.ACTION_CANCEL:
+			case MotionEvent.ACTION_UP: {
+				if (mIsBeingDragged) {
+					smoothScrollBack();
+					return true;
+				}
+
+				break;
+			}
+		}
+		return false;
 	}
-	
+
 	/**
 	 * 处理拖动事件
 	 * @param lastDiffY 本次拖动的位置与上次拖动的位置的距离差
 	 */
 	private void pullEvent(int lastDiffY) {
 		if(null == headerView) return;
-        
+
 		currentHeight = currentHeight + lastDiffY;
-        
-        if(currentHeight > maxHeight) currentHeight = maxHeight;
-        if(currentHeight < minHeight) currentHeight = minHeight;
-        
-        ViewGroup.LayoutParams localLayoutParams = headerView.getLayoutParams();
-        localLayoutParams.height = currentHeight;
-        headerView.setLayoutParams(localLayoutParams);
-        
-        if (onPullZoomListener != null) {
-            onPullZoomListener.onPullZooming(currentHeight);
-        }
-    }
-	
+
+        updateCoverView();
+
+		if(currentHeight > maxHeight) currentHeight = maxHeight;
+		if(currentHeight < minHeight) currentHeight = minHeight;
+
+		ViewGroup.LayoutParams localLayoutParams = headerView.getLayoutParams();
+		localLayoutParams.height = currentHeight;
+		headerView.setLayoutParams(localLayoutParams);
+
+		if (onPullZoomListener != null) {
+			onPullZoomListener.onPullZooming(currentHeight);
+		}
+	}
+
 	/**
 	 * 恢复到最大化或最小化
 	 */
@@ -259,21 +265,43 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 				mValueAnimator.setIntValues(currentHeight, minHeight);
 				mValueAnimator.start();
 			}
+		}else{
+            updateCoverView();
+        }
+	}
+
+	/**
+	 * 更新CoverView的透明度
+	 */
+	private void updateCoverView(){
+		if(null != coverView){
+			int diffCurrent = maxHeight - currentHeight;
+			int diffAnchor = maxHeight - anchorHeight;
+			if(diffCurrent > diffAnchor){
+				diffCurrent = diffAnchor;
+			}
+			float alpha = 0;
+			if(diffCurrent <= 0){
+				alpha = 0;
+			}else{
+				alpha = diffCurrent/(float)maxHeight;
+			}
+			coverView.setAlpha(alpha);
 		}
 	}
 
-	 /**
-	  * 获取HeaderView最大化时的高度
-	  * @return
-	  */
-	 public int getMaxHeight() {
+	/**
+	 * 获取HeaderView最大化时的高度
+	 * @return
+	 */
+	public int getMaxHeight() {
 		return maxHeight;
 	}
 
-	 /**
-	  * 设置HeaderView最大化时的高度
-	  * @param maxHeight
-	  */
+	/**
+	 * 设置HeaderView最大化时的高度
+	 * @param maxHeight
+	 */
 	public void setMaxHeight(int maxHeight) {
 		this.maxHeight = maxHeight;
 		this.currentHeight = this.maxHeight;
@@ -294,7 +322,7 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	public void setMinHeight(int minHeight) {
 		this.minHeight = minHeight;
 	}
-	
+
 	/**
 	 * HeaderView在用户拖动结束时是否进行最大或最小化的临界点状态时的高度
 	 * @return
@@ -313,11 +341,21 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 
 	/**
 	 * 设置需要动态变化大小的HeaderView
-	 * @param mHeaderView
+	 * @param headerView
 	 */
 	public void setHeaderView(View headerView) {
 		this.headerView = headerView;
 	}
+
+    /**
+     * 设置遮罩层View的id
+     * @param id
+     */
+    public void setCoverViewId(int id){
+        if(null != this.headerView){
+            this.coverView = this.headerView.findViewById(id);
+        }
+    }
 
 	/**
 	 * 为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
@@ -328,7 +366,7 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	public void setContentViewMaxHeight(int height){
 		this.contentViewMaxHeight = height;
 	}
-	
+
 	/**
 	 * 为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
 	 * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
@@ -337,7 +375,23 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	public int getContentViewMaxHeight(){
 		return this.contentViewMaxHeight;
 	}
-	
+
+	/**
+	 * 获取header当前高度（此值仅在只有该组件控制header的高度时正确）
+	 * @return
+	 */
+	public int getCurrentHeight() {
+		return currentHeight;
+	}
+
+	/**
+	 * 设置header的当前高度（因为在header被非本组件之外的事务改变了高度时，需要手动设置header当前的高度给该组件，以便再次触发该组件改变header的高度时，动画是连续的）
+	 * @param currentHeight
+	 */
+	public void setCurrentHeight(int currentHeight) {
+		this.currentHeight = currentHeight;
+	}
+
 	/**
 	 * 标记是否允许在第一次触摸时设置ContentView的MaxHeight，默认为true，允许设置
 	 * 设置为true为允许，此时请设置setContentViewMaxHeight(int height)，指定ContentView的最大高度，
@@ -364,27 +418,27 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	 * @return
 	 */
 	protected abstract boolean isReadyForDrag();
-	 
-	 /**
-	  * 是否允许向下拖拽
-	  * @return
-	  */
-	 protected abstract boolean isReadyForDragDown();
-	 
-	 /**
-	  * 是否允许向上拖拽
-	  * @return
-	  */
-	 protected abstract boolean isReadyForDragUp();
-	 
-	 /**
-	  *为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
-	  * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
-	  * 如果用户未指定contentViewMaxHeight，则将自动已当前ContentView的高度 + headerView的最大高度 - headerView的最小高度为ContentView的最大高度；
-	  * （这种情况，已在ListView下验证过，为Listview设置过最大高度后，ListView再动画过程中就不需要重绘子View，动画流畅度大大提升）
-	  */
-	 protected abstract void setContentViewMaxHeight();
-	
+
+	/**
+	 * 是否允许向下拖拽
+	 * @return
+	 */
+	protected abstract boolean isReadyForDragDown();
+
+	/**
+	 * 是否允许向上拖拽
+	 * @return
+	 */
+	protected abstract boolean isReadyForDragUp();
+
+	/**
+	 *为contentView设置一个显示时的最大高度，这样可以避免在contentView跟随headerView的大小改变上下移动时，
+	 * contentView的高度也进行改变，进而引发contentView重绘，最终造成滑动效果严重卡顿的问题；
+	 * 如果用户未指定contentViewMaxHeight，则将自动已当前ContentView的高度 + headerView的最大高度 - headerView的最小高度为ContentView的最大高度；
+	 * （这种情况，已在ListView下验证过，为Listview设置过最大高度后，ListView再动画过程中就不需要重绘子View，动画流畅度大大提升）
+	 */
+	protected abstract void setContentViewMaxHeight();
+
 	/**
 	 * 获取HeaderView缩放过程的监听器
 	 * @return
@@ -402,10 +456,10 @@ public abstract class PullToScaleBaseView extends LinearLayout{
 	}
 
 	public interface OnPullZoomListener {
-	    	
+
 		public void onPullZooming(int currenHeaderHeight);
 
-        public void onPullZoomEnd(int currenHeaderHeight);
-	        
+		public void onPullZoomEnd(int currenHeaderHeight);
+
 	}
 }
