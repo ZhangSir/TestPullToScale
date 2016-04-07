@@ -2,6 +2,7 @@ package com.test.pulltoscale.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
@@ -26,46 +27,69 @@ public class PullToScaleListView extends PullToScaleBaseView {
 	 * <p>
 	 * 判断条件：在listView的HeaderView的top大于等于listView的top的情况下返回true
 	 * <p>
-	 * 
+	 *
 	 * @return
 	 */
 	protected boolean isReadyForDrag() {
 		if (null == listView || null == headerView)
 			return false;
 		if (listView.getFirstVisiblePosition() == 0) {
-			return (headerView.getTop() + headerView.getHeight()) >= getTop();
+			View firstView = listView.getChildAt(0);
+			if (null != firstView) {
+				return firstView.getTop() >= 0;
+			}
+			return true;
+//			return (headerView.getTop() + headerView.getHeight()) >= getTop();
 		}
 		return false;
 	}
 
 	/**
 	 * 是否允许向下拖拽
-	 * 
+	 *
 	 * @return
 	 */
 	protected boolean isReadyForDragDown() {
 		if (null == listView || null == headerView)
 			return false;
 		if (listView.getFirstVisiblePosition() == 0) {
-			if ((headerView.getTop() + headerView.getHeight()) >= getTop()) {
-				return headerView.getHeight() == minHeight;
+			View firstView = listView.getChildAt(0);
+			if(null != firstView){
+				if (firstView.getTop() >= 0) {
+					return headerView.getHeight() == minHeight;
+				}
+			}else{
+				return true;
 			}
+
+//			if ((headerView.getTop() + headerView.getHeight()) >= getTop()) {
+//				return headerView.getHeight() == minHeight;
+//			}
 		}
 		return false;
 	}
 
 	/**
 	 * 是否允许向上拖拽
-	 * 
+	 *
 	 * @return
 	 */
 	protected boolean isReadyForDragUp() {
 		if (null == listView || null == headerView)
 			return false;
 		if (listView.getFirstVisiblePosition() == 0) {
-			if ((headerView.getTop() + headerView.getHeight()) >= getTop()) {
-				return headerView.getHeight() == maxHeight;
+			View firstView = listView.getChildAt(0);
+			if(null != firstView){
+				if (firstView.getTop() >= 0) {
+					return headerView.getHeight() == maxHeight;
+				}
+			}else{
+				return true;
 			}
+
+//			if ((headerView.getTop() + headerView.getHeight()) >= getTop()) {
+//				return headerView.getHeight() == maxHeight;
+//			}
 		}
 		return false;
 	}
